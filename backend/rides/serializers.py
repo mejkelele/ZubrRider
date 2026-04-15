@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Ride
+from .models import Ride, Transaction
 from accounts.models import Location, Car
 from accounts.serializers import UserSerializer, CarSerializer
 
@@ -39,11 +39,9 @@ class RideDetailSerializer(serializers.ModelSerializer):
 
 
 class RideCreateSerializer(serializers.ModelSerializer):
-    # Przyjmujemy ID samochodu
     car_id = serializers.PrimaryKeyRelatedField(
         queryset=Car.objects.all(), source="car", write_only=True
     )
-    # Przyjmujemy zagnieżdżone dane lokalizacji (dane tekstowe z formularza)
     start_location = LocationSerializer()
     end_location = LocationSerializer()
 
@@ -62,12 +60,9 @@ class RideCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context["request"].user
 
-        # Wyciągamy dane lokalizacji ze słownika
         start_data = validated_data.pop("start_location")
         end_data = validated_data.pop("end_location")
 
-        # Tworzymy obiekty Location (z domyślnymi koordynatami 0.0, bo nie mamy geokodowania)
-        # Musimy przypisać usera, bo model tego wymaga
         start_loc = Location.objects.create(
             user=user, latitude=0.0, longitude=0.0, postal_code="00-000", **start_data
         )
@@ -75,7 +70,6 @@ class RideCreateSerializer(serializers.ModelSerializer):
             user=user, latitude=0.0, longitude=0.0, postal_code="00-000", **end_data
         )
 
-        # Tworzymy przejazd
         ride = Ride.objects.create(
             driver=user,
             start_location=start_loc,
@@ -84,3 +78,26 @@ class RideCreateSerializer(serializers.ModelSerializer):
             **validated_data
         )
         return ride
+
+
+class TransactionSerializer(serializers.ModelSerializer):
+    source_email = serializers.SerializerMethodField()
+    target_email = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Transaction
+        fields = [
+            "id",
+            "amount",
+            "type",
+            "transaction_date",
+            "transaction_time",
+            "source_email",
+            "target_email",
+        ]
+
+    def get_source_email(self, obj):
+        return obj.source_wallet.user.email if obj.source_wallet else None
+
+    def get_target_email(self, obj):
+        return obj.target_wallet.user.email if obj.target_wallet else None

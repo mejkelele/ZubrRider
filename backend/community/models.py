@@ -4,7 +4,6 @@ from django.db import models
 from rides.models import Ride
 
 
-# Create your models here.
 class Rating(models.Model):
     ride = models.ForeignKey(Ride, on_delete=models.CASCADE, related_name='ratings')
     rater = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='given_ratings')
@@ -12,8 +11,11 @@ class Rating(models.Model):
     score = models.IntegerField()
     comment = models.TextField(blank=True)
 
+    class Meta:
+        unique_together = ('ride', 'rater', 'rated_user')
+
     def __str__(self):
-        return f"{self.rater.email} {self.rater.name} {str(self.score)} {str(self.comment)}"
+        return f"{self.rater.email} → {self.rated_user.email}: {self.score}/5"
 
 
 class Message(models.Model):
@@ -24,7 +26,7 @@ class Message(models.Model):
     sent_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.sender.email} {self.sender.name} {self.receiver.name} {self.ride.name} {self.ride.ride.name} {self.content}"
+        return f"{self.sender.email} → {self.receiver.email} ({self.ride.id}): {self.content[:50]}"
 
 
 class Alert(models.Model):
@@ -35,4 +37,4 @@ class Alert(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.email} {self.user.name} {self.content} {self.link} {self.is_read}"
+        return f"{self.user.email}: {self.content} (read={self.is_read})"

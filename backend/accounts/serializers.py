@@ -1,7 +1,5 @@
 from rest_framework import serializers
-from .models import User, Car
-
-# Importujemy modele z innych aplikacji wewnątrz metod lub na górze, jeśli nie ma cyklu
+from .models import User, Car, Location, Wallet
 from community.models import Rating
 from rides.models import Ride
 
@@ -59,13 +57,14 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "email", "date_joined", "last_login"]
 
 
-# --- NOWE SERIALIZERY DLA PROFILU KIEROWCY ---
-
-
 class CarSerializer(serializers.ModelSerializer):
     class Meta:
         model = Car
-        fields = ["brand", "model", "license_plate", "seats"]
+        fields = ["id", "brand", "model", "license_plate", "seats"]
+
+    def create(self, validated_data):
+        validated_data["owner"] = self.context["request"].user
+        return super().create(validated_data)
 
 
 class DriverReviewSerializer(serializers.ModelSerializer):
@@ -89,20 +88,17 @@ class DriverProfileSerializer(serializers.ModelSerializer):
             "last_name",
             "username",
             "date_joined",
-            "city",  # Tylko miasto, bez dokładnego adresu
+            "city",
             "cars",
             "reviews",
             "stats",
         ]
 
     def get_reviews(self, obj):
-        # Pobieramy opinie, gdzie ten użytkownik był oceniany (rated_user)
-        # Ograniczamy np. do ostatnich 10
         ratings = Rating.objects.filter(rated_user=obj).order_by("-id")[:10]
         return DriverReviewSerializer(ratings, many=True).data
 
     def get_stats(self, obj):
-        # Obliczanie statystyk w locie
         rides_count = Ride.objects.filter(driver=obj).count()
         ratings = Rating.objects.filter(rated_user=obj)
         avg_rating = 0
@@ -115,3 +111,10 @@ class DriverProfileSerializer(serializers.ModelSerializer):
             "rating_avg": avg_rating,
             "rating_count": ratings.count(),
         }
+
+
+class WalletSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Wallet
+        fields = ["id", "balance"]
+        read_only_fields = ["id", "balance"]
