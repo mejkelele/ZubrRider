@@ -21,6 +21,13 @@ function RideDetails() {
     const chatEndRef = useRef(null);
     const [currentUserId, setCurrentUserId] = useState(null);
 
+    // Rating
+    const [ratingModalOpen, setRatingModalOpen] = useState(false);
+    const [ratingScore, setRatingScore] = useState(5);
+    const [ratingComment, setRatingComment] = useState("");
+    const [ratingSubmitting, setRatingSubmitting] = useState(false);
+    const [ratingMessage, setRatingMessage] = useState("");
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -101,6 +108,27 @@ function RideDetails() {
             setMessages(res.data);
         } catch (error) {
             setChatError(error.response?.data?.error || "Nie udało się wysłać wiadomości.");
+        }
+    };
+
+    const handleRateDriver = async (e) => {
+        e.preventDefault();
+        setRatingSubmitting(true);
+        setRatingMessage("");
+        
+        try {
+            await api.post(`/api/community/rate/`, {
+                ride: ride.id,
+                rated_user: ride.driver.id,
+                score: ratingScore,
+                comment: ratingComment
+            });
+            setRatingMessage("Dziękujemy za wystawienie oceny!");
+            setTimeout(() => setRatingModalOpen(false), 2000);
+        } catch (error) {
+            setRatingMessage(error.response?.data?.error || "Wystąpił błąd.");
+        } finally {
+            setRatingSubmitting(false);
         }
     };
 
@@ -343,6 +371,16 @@ function RideDetails() {
                             </div>
                         )}
 
+                        {/* Ocena dla starych przejazdów */}
+                        {!isDriver && ride.status !== "active" && (
+                            <button
+                                onClick={() => setRatingModalOpen(true)}
+                                className="w-full mt-4 bg-gray-800 text-white py-2 rounded-lg font-bold hover:bg-gray-700 transition"
+                            >
+                                ⭐ Oceń kierowcę
+                            </button>
+                        )}
+
                         <p className="text-xs text-center text-gray-400 mt-3">
                             Płatność z portfela. Środki zostaną pobrane natychmiast.
                         </p>
@@ -350,6 +388,59 @@ function RideDetails() {
                 </div>
 
             </div>
+
+            {/* Modal oceny */}
+            {ratingModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 relative">
+                        <button 
+                            onClick={() => setRatingModalOpen(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-800 font-bold"
+                        >✕</button>
+                        
+                        <h2 className="text-2xl font-bold text-zubr-dark mb-4">Oceń Przejazd</h2>
+                        {ratingMessage && (
+                            <div className={`p-3 mb-4 rounded-lg text-sm ${ratingMessage.includes("Dziękujemy") ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                                {ratingMessage}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleRateDriver}>
+                            <div className="mb-4">
+                                <label className="block text-sm text-gray-600 mb-1">Ocena (1-5)</label>
+                                <div className="flex gap-2">
+                                    {[1, 2, 3, 4, 5].map(star => (
+                                        <button 
+                                            key={star} 
+                                            type="button"
+                                            onClick={() => setRatingScore(star)}
+                                            className={`w-10 h-10 rounded-full text-lg font-bold transition ${ratingScore >= star ? "bg-zubr-gold text-zubr-dark" : "bg-gray-100 text-gray-400"}`}
+                                        >
+                                            ★
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="mb-6">
+                                <label className="block text-sm text-gray-600 mb-1">Komentarz (opcjonalnie)</label>
+                                <textarea 
+                                    value={ratingComment}
+                                    onChange={(e) => setRatingComment(e.target.value)}
+                                    className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-zubr-gold"
+                                    rows="3"
+                                ></textarea>
+                            </div>
+                            <button 
+                                type="submit"
+                                disabled={ratingSubmitting || ratingMessage.includes("Dziękujemy")}
+                                className="w-full bg-zubr-dark text-white font-bold py-3 rounded-lg hover:bg-green-800 transition disabled:opacity-50"
+                            >
+                                {ratingSubmitting ? "Wysyłanie..." : "Wyślij Ocenę"}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

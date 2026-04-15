@@ -8,6 +8,7 @@ import DriverProfile from "./pages/DriverProfile"
 import RideDetails from "./pages/RideDetails"
 import PublishRide from "./pages/PublishRide" // NOWY
 import MyRides from "./pages/MyRides"         // NOWY
+import Wallet from "./pages/Wallet"
 import NotFound from "./pages/NotFound"
 import ProtectedRoute from "./components/ProtectedRoute"
 import Layout from "./components/Layout"
@@ -48,6 +49,9 @@ function App() {
           }/>
           <Route path="/my-rides" element={
               <ProtectedRoute><MyRides /></ProtectedRoute>
+          }/>
+          <Route path="/wallet" element={
+              <ProtectedRoute><Wallet /></ProtectedRoute>
           }/>
           
           {/* TRASY PUBLICZNE */}

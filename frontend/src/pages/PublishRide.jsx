@@ -84,7 +84,12 @@ function PublishRide() {
             <div className="text-center py-10 bg-white rounded-xl shadow p-8 max-w-lg mx-auto border-t-4 border-red-500">
                 <h2 className="text-xl font-bold mb-4 text-gray-800">Nie masz dodanego samochodu!</h2>
                 <p className="text-gray-600 mb-6">Aby dodać przejazd, musisz najpierw zarejestrować pojazd w swoim profilu.</p>
-                <p className="text-sm text-gray-400">(Funkcja dodawania auta w przygotowaniu - poproś admina o dodanie auta w panelu Django)</p>
+                <button 
+                    onClick={() => navigate("/profile")}
+                    className="bg-zubr-dark text-white px-6 py-2 rounded-lg font-bold hover:bg-green-800 transition"
+                >
+                    Przejdź do profilu by dodać auto
+                </button>
             </div>
         );
     }
